@@ -1,0 +1,670 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Browser Feature Tracker</title>
+
+    <!-- Bootstrap and Bootstrap icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10/font/bootstrap-icons.css" rel="stylesheet" />
+
+    <style>
+      .container {
+        padding: 20px;
+      }
+      .date-filters {
+        margin: 20px 0;
+      }
+      .date-filters input {
+        margin-right: 15px;
+      }
+      .feature-card {
+        max-width: 40rem;
+      }
+      .loading-spinner {
+        display: none;
+      }
+      .loading .loading-spinner {
+        display: inline-block;
+      }
+      .average-container {
+        margin-top: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg bg-body-tertiary" data-bs-theme="dark">
+      <div class="container-fluid">
+        <a class="navbar-brand" href=".">Browser Feature Tracker</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarContent">
+          <div class="nav-item dropdown ms-auto">
+            <button
+              class="dark-theme-toggle btn btn-outline-light dropdown-toggle"
+              type="button"
+              data-bs-toggle="dropdown"
+            >
+              <i class="bi bi-circle-half"></i> <span class="d-lg-none ms-2">Toggle theme</span>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li>
+                <button class="dropdown-item" data-bs-theme-value="light">
+                  <i class="me-2 bi bi-sun-fill"></i> Light
+                </button>
+              </li>
+              <li>
+                <button class="dropdown-item" data-bs-theme-value="dark">
+                  <i class="me-2 bi bi-moon-stars-fill"></i> Dark
+                </button>
+              </li>
+              <li>
+                <button class="dropdown-item" data-bs-theme-value="auto">
+                  <i class="me-2 bi bi-circle-half"></i> Auto
+                </button>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container">
+      <h1 class="mt-5 text-center">Browser Feature Tracker</h1>
+
+      <div class="mx-auto my-5 feature-card">
+        <p>Track and analyze browser feature implementation timelines across different browsers.</p>
+        <p>Select a date range to filter features and see which browsers were first to implement them.</p>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-body">
+          <div class="date-filters">
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label for="start-date" class="form-label">Start Date:</label>
+                <input type="date" id="start-date" class="form-control" />
+              </div>
+
+              <div class="col-md-4">
+                <label for="end-date" class="form-label">End Date:</label>
+                <input type="date" id="end-date" class="form-control" />
+              </div>
+
+              <div class="col-md-4 d-flex align-items-end">
+                <button id="check-dates" class="btn btn-primary">
+                  <span class="loading-spinner spinner-border spinner-border-sm me-2" role="status"></span>
+                  Check Features
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div id="results-container" class="mt-4 d-none">
+            <div class="row mb-3">
+              <div class="col-md-8">
+                <label for="feature-select" class="form-label">Select Feature:</label>
+                <select id="feature-select" class="form-select"></select>
+              </div>
+              <div class="col-md-4 d-flex align-items-end">
+                <button id="export-csv" class="btn btn-outline-secondary">
+                  <i class="bi bi-download me-2"></i>Download CSV
+                </button>
+              </div>
+            </div>
+
+            <div class="card mt-4">
+              <div class="card-header">
+                <h5 class="mb-0">Browser Release Info</h5>
+              </div>
+              <div class="card-body">
+                <div class="table-responsive">
+                  <table id="browser-table" class="table">
+                    <thead>
+                      <tr>
+                        <th>Browser</th>
+                        <th>Release Date</th>
+                        <th>Version</th>
+                        <th>Rank</th>
+                        <th>Delay (days)</th>
+                      </tr>
+                    </thead>
+                    <tbody></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <div class="card mt-4">
+              <div class="card-header">
+                <h5 class="mb-0">Average Rank</h5>
+              </div>
+              <div class="card-body">
+                <div id="average-rank"></div>
+              </div>
+            </div>
+
+            <div class="card mt-4">
+              <div class="card-header">
+                <h5 class="mb-0">Global Average Delay Days</h5>
+              </div>
+              <div class="card-body">
+                <div id="average-delay"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Footer -->
+    <footer class="my-5 vh-100 d-flex align-items-center justify-content-center">
+      <h1 class="display-6">
+        Designed by
+        <a href="https://gramener.com/" class="text-reset link-offset-3 link-underline link-underline-opacity-25"
+          >Gramener</a
+        >
+      </h1>
+    </footer>
+
+    <script>
+      // Add loading state handlers
+      function showLoading(button) {
+        button.classList.add("loading");
+        button.disabled = true;
+      }
+
+      function hideLoading(button) {
+        button.classList.remove("loading");
+        button.disabled = false;
+      }
+
+      // Add this new function to set default dates
+      async function setDefaultDates() {
+        try {
+          showLoading(document.getElementById("check-dates"));
+
+          // Set earliest browser date and today's date
+          const earliestDate = new Date("1995-08-16");
+          const today = new Date();
+
+          // Format dates for input fields (YYYY-MM-DD)
+          const startDateInput = document.getElementById("start-date");
+          const endDateInput = document.getElementById("end-date");
+
+          startDateInput.value = earliestDate.toISOString().split("T")[0];
+          endDateInput.value = today.toISOString().split("T")[0];
+
+          // Fetch all feature data
+          const response = await fetch("https://api.github.com/repos/mdn/browser-compat-data/contents/api");
+          const data = await response.json();
+          const allFeatureData = await Promise.all(
+            data.map(async (item) => {
+              const featureName = item.name.replace(".json", "");
+              const url = `https://bcd.developer.mozilla.org/bcd/api/v0/current/api.${featureName}.json`;
+              try {
+                const response = await fetch(url);
+                return await response.json();
+              } catch (error) {
+                console.error(`Error fetching ${featureName}:`, error);
+                return null;
+              }
+            })
+          );
+
+          // Trigger initial feature fetch
+          await fetchFeatures();
+          document.getElementById("results-container").classList.remove("d-none");
+
+          hideLoading(document.getElementById("check-dates"));
+        } catch (error) {
+          console.error("Error setting default dates:", error);
+          hideLoading(document.getElementById("check-dates"));
+        }
+      }
+
+      // Modify the DOMContentLoaded event listener
+      document.addEventListener("DOMContentLoaded", () => {
+        const checkDatesBtn = document.getElementById("check-dates");
+        const featureSelect = document.getElementById("feature-select");
+        const exportCsvBtn = document.getElementById("export-csv");
+        const resultsContainer = document.getElementById("results-container");
+
+        // Set up event listeners
+        checkDatesBtn.addEventListener("click", async () => {
+          showLoading(checkDatesBtn);
+          await fetchFeatures();
+          resultsContainer.classList.remove("d-none");
+          hideLoading(checkDatesBtn);
+        });
+
+        featureSelect.addEventListener("change", () => {
+          fetchFeatureData();
+        });
+
+        exportCsvBtn.addEventListener("click", () => {
+          showLoading(exportCsvBtn);
+          exportToCSV().finally(() => {
+            hideLoading(exportCsvBtn);
+          });
+        });
+
+        // Set default dates and load initial data
+        setDefaultDates();
+      });
+
+      async function fetchFeatures() {
+        try {
+          const response = await fetch("https://api.github.com/repos/mdn/browser-compat-data/contents/api");
+          const data = await response.json();
+          const select = document.getElementById("feature-select");
+          select.innerHTML = ""; // Clear existing options
+
+          // Show loading state in the results container
+          document.getElementById("average-rank").innerHTML = "<p>Loading features...</p>";
+          document.getElementById("average-delay").innerHTML = "<p>Loading features...</p>";
+          document.querySelector("#browser-table tbody").innerHTML = "";
+
+          // First collect all feature data
+          const allFeatureData = await Promise.all(
+            data.map(async (item) => {
+              const featureName = item.name.replace(".json", "");
+              const url = `https://bcd.developer.mozilla.org/bcd/api/v0/current/api.${featureName}.json`;
+              try {
+                const response = await fetch(url);
+                return await response.json();
+              } catch (error) {
+                console.error(`Error fetching ${featureName}:`, error);
+                return null;
+              }
+            })
+          );
+
+          // Filter features based on date range and populate select options
+          data.forEach((item, index) => {
+            if (allFeatureData[index]) {
+              const supportData = extractSupportData(allFeatureData[index]);
+              if (isFeatureInDateRange(supportData)) {
+                const option = document.createElement("option");
+                option.value = item.name.replace(".json", "");
+                option.textContent = item.name.replace(".json", "");
+                select.appendChild(option);
+              }
+            }
+          });
+
+          // Calculate global browser ranks with filtered data
+          const filteredFeatureData = allFeatureData.filter((feature, index) => {
+            if (!feature) return false;
+            const supportData = extractSupportData(feature);
+            return isFeatureInDateRange(supportData);
+          });
+          
+          calculateGlobalBrowserRanks(filteredFeatureData);
+          calculateGlobalBrowserDelays(filteredFeatureData);
+
+          if (select.options.length > 0) {
+            fetchFeatureData();
+          } else {
+            // If no features found, show message but keep the container visible
+            document.querySelector("#browser-table tbody").innerHTML = "";
+            document.getElementById("average-rank").innerHTML =
+              '<div class="alert alert-info">No features found in selected date range</div>';
+            document.getElementById("average-delay").innerHTML =
+              '<div class="alert alert-info">No features found in selected date range</div>';
+          }
+        } catch (error) {
+          console.error("Error fetching features:", error);
+          document.getElementById("average-rank").innerHTML =
+            '<div class="alert alert-danger">Error loading features</div>';
+          document.getElementById("average-delay").innerHTML =
+            '<div class="alert alert-danger">Error loading features</div>';
+        }
+      }
+
+      async function fetchFeatureData() {
+        const feature = document.getElementById("feature-select").value;
+        const url = `https://bcd.developer.mozilla.org/bcd/api/v0/current/api.${feature}.json`;
+
+        try {
+          const response = await fetch(url);
+          const data = await response.json();
+          const supportData = extractSupportData(data);
+          renderTable(supportData);
+        } catch (error) {
+          console.error("Error fetching feature data:", error);
+        }
+      }
+
+      function extractSupportData(data) {
+        const support = data.data.__compat.support;
+        const browsers = Object.keys(support);
+
+        const records = browsers
+          .map((browser) => {
+            const info = support[browser][0];
+            return info && info.version_added && info.release_date
+              ? {
+                  browser,
+                  version: info.version_added,
+                  date: new Date(info.release_date),
+                }
+              : null;
+          })
+          .filter(Boolean);
+
+        // Sort by date to find the earliest implementation
+        records.sort((a, b) => a.date - b.date);
+        
+        // Calculate delay days relative to the first implementation
+        if (records.length > 0) {
+          const firstDate = records[0].date.getTime();
+          records.forEach(record => {
+            // Calculate delay in days (will be 0 for the first browser)
+            const delayDays = Math.round((record.date.getTime() - firstDate) / (1000 * 60 * 60 * 24));
+            record.delayDays = delayDays;
+          });
+        }
+        
+        return records.map((record, index) => ({ ...record, rank: index + 1 }));
+      }
+
+      let globalAverageRanks = {}; // Store the global average ranks
+
+      function calculateGlobalBrowserRanks(allFeatureData) {
+        const browserRankSums = {};
+        const browserCounts = {};
+
+        allFeatureData.forEach((featureData) => {
+          if (!featureData?.data?.__compat?.support) return;
+
+          const support = featureData.data.__compat.support;
+          const browsers = Object.keys(support);
+
+          const records = browsers
+            .map((browser) => {
+              const info = support[browser][0];
+              return info && info.version_added && info.release_date
+                ? {
+                    browser,
+                    date: new Date(info.release_date),
+                  }
+                : null;
+            })
+            .filter(Boolean);
+
+          records.sort((a, b) => a.date - b.date);
+
+          // Assign ranks for this feature
+          records.forEach((record, index) => {
+            const rank = index + 1;
+            browserRankSums[record.browser] = (browserRankSums[record.browser] || 0) + rank;
+            browserCounts[record.browser] = (browserCounts[record.browser] || 0) + 1;
+          });
+        });
+
+        // Calculate final average ranks
+        Object.keys(browserRankSums).forEach((browser) => {
+          globalAverageRanks[browser] = (browserRankSums[browser] / browserCounts[browser]).toFixed(2);
+        });
+
+        // Render the global average ranks
+        renderGlobalAverageRanks();
+      }
+
+      function renderGlobalAverageRanks() {
+        const averageContainer = document.getElementById("average-rank");
+        averageContainer.innerHTML = "<h3>Global Average Ranks (across all features)</h3>";
+
+        // Sort browsers by average rank
+        const sortedBrowsers = Object.entries(globalAverageRanks).sort((a, b) => a[1] - b[1]);
+
+        sortedBrowsers.forEach(([browser, avgRank]) => {
+          const p = document.createElement("p");
+          p.textContent = `${browser}: ${avgRank}`;
+          averageContainer.appendChild(p);
+        });
+      }
+      
+      let globalAverageDelays = {}; // Store the global average delay in days
+
+      function calculateGlobalBrowserDelays(allFeatureData) {
+        const browserDelaySums = {};
+        const browserCounts = {};
+        // Track first implementations for each browser
+        const browserFirstImplementations = {};
+
+        allFeatureData.forEach((featureData) => {
+          if (!featureData?.data?.__compat?.support) return;
+
+          const support = featureData.data.__compat.support;
+          const browsers = Object.keys(support);
+
+          const records = browsers
+            .map((browser) => {
+              const info = support[browser][0];
+              return info && info.version_added && info.release_date
+                ? {
+                    browser,
+                    date: new Date(info.release_date),
+                  }
+                : null;
+            })
+            .filter(Boolean);
+
+          if (records.length === 0) return;
+
+          // Find the earliest release date for this feature
+          const minDate = Math.min(...records.map((r) => r.date.getTime()));
+          
+          // Sort records by date
+          records.sort((a, b) => a.date - b.date);
+          
+          // Track which browser was first for this feature
+          const firstBrowser = records[0].browser;
+          browserFirstImplementations[firstBrowser] = (browserFirstImplementations[firstBrowser] || 0) + 1;
+
+          // Calculate delay days relative to the first released browser
+          records.forEach((record) => {
+            const delayDays = Math.round((record.date - minDate) / (1000 * 60 * 60 * 24)); // Convert ms to days
+            browserDelaySums[record.browser] = (browserDelaySums[record.browser] || 0) + delayDays;
+            browserCounts[record.browser] = (browserCounts[record.browser] || 0) + 1;
+          });
+        });
+
+        // Calculate final average delay days
+        Object.keys(browserDelaySums).forEach((browser) => {
+          globalAverageDelays[browser] = (browserDelaySums[browser] / browserCounts[browser]).toFixed(2);
+        });
+
+        // Render the global average delays
+        renderGlobalAverageDelays(allFeatureData);
+      }
+
+      function renderGlobalAverageDelays(featureData) {
+        const delayContainer = document.getElementById("average-delay");
+        delayContainer.innerHTML = "<h3>Global Average Delay Days (across all features)</h3>";
+
+        // Sort browsers by average delay days (lower is better)
+        const sortedBrowsers = Object.entries(globalAverageDelays).sort((a, b) => a[1] - b[1]);
+
+        // Add information about which browsers are most frequently first
+        const browserFirstImplementations = {};
+        let totalFeatures = 0;
+        
+        // Count how many times each browser was first to implement a feature
+        featureData.forEach((featureData) => {
+          if (!featureData?.data?.__compat?.support) return;
+          
+          const support = featureData.data.__compat.support;
+          const browsers = Object.keys(support);
+          
+          const records = browsers
+            .map((browser) => {
+              const info = support[browser][0];
+              return info && info.version_added && info.release_date
+                ? {
+                    browser,
+                    date: new Date(info.release_date),
+                  }
+                : null;
+            })
+            .filter(Boolean);
+            
+          if (records.length === 0) return;
+          
+          // Sort by date to find the earliest implementation
+          records.sort((a, b) => a.date - b.date);
+          
+          // Count which browser was first
+          const firstBrowser = records[0].browser;
+          browserFirstImplementations[firstBrowser] = (browserFirstImplementations[firstBrowser] || 0) + 1;
+          totalFeatures++;
+        });
+        
+        // Add explanation about the delay calculation
+        const explanation = document.createElement("div");
+        explanation.className = "alert alert-info mb-3";
+        explanation.innerHTML = `
+          <p><strong>Note:</strong> The average delay shows how many days on average each browser takes to implement features after the first browser has implemented them.</p>
+          <p>Browsers that are frequently first to implement features will have lower average delays.</p>
+        `;
+        delayContainer.appendChild(explanation);
+        
+        // Add information about which browsers are most frequently first
+        const firstImplementationInfo = document.createElement("div");
+        firstImplementationInfo.className = "mb-3";
+        firstImplementationInfo.innerHTML = "<h4>Browsers First to Implement Features</h4>";
+        
+        // Sort browsers by number of first implementations
+        const sortedFirstImplementations = Object.entries(browserFirstImplementations)
+          .sort((a, b) => b[1] - a[1]);
+          
+        sortedFirstImplementations.forEach(([browser, count]) => {
+          const percentage = ((count / totalFeatures) * 100).toFixed(1);
+          const p = document.createElement("p");
+          p.textContent = `${browser}: ${count} features (${percentage}%)`;
+          firstImplementationInfo.appendChild(p);
+        });
+        
+        delayContainer.appendChild(firstImplementationInfo);
+        
+        // Now show the average delays
+        const delaysTitle = document.createElement("h4");
+        delaysTitle.textContent = "Average Delay by Browser";
+        delayContainer.appendChild(delaysTitle);
+
+        // Find the browser with the lowest average delay (typically the first to implement features)
+        const lowestAvgDelay = parseFloat(sortedBrowsers[0][1]);
+        
+        sortedBrowsers.forEach(([browser, avgDelay]) => {
+          const p = document.createElement("p");
+          
+          // Format with sign: first browser gets +0, others get their relative delay
+          const delayValue = parseFloat(avgDelay);
+          const formattedDelay = delayValue === lowestAvgDelay
+            ? "+0"
+            : delayValue > 0
+              ? `+${avgDelay}`
+              : avgDelay;
+              
+          p.textContent = `${browser}: ${formattedDelay} days`;
+          delayContainer.appendChild(p);
+        });
+      }
+
+      function renderTable(data) {
+        const tbody = document.querySelector("#browser-table tbody");
+        tbody.innerHTML = "";
+
+        data.forEach((item) => {
+          const row = document.createElement("tr");
+          
+          // Format delay days with sign (+ for first browser, which will be 0)
+          const delayDisplay = item.delayDays === 0
+            ? "+0"
+            : item.delayDays > 0
+              ? `+${item.delayDays}`
+              : item.delayDays.toString();
+          
+          row.innerHTML = `
+          <td>${item.browser}</td>
+          <td>${item.date.toISOString().split("T")[0]}</td>
+          <td>${item.version}</td>
+          <td>${item.rank}</td>
+          <td>${delayDisplay}</td>
+        `;
+          tbody.appendChild(row);
+        });
+      }
+      function isFeatureInDateRange(supportData) {
+        const startDate = document.getElementById("start-date").value;
+        const endDate = document.getElementById("end-date").value;
+        if (!startDate && !endDate) return true;
+
+        const dates = supportData.map((record) => record.date.getTime());
+        const featureFirstSupport = Math.min(...dates);
+
+        const startDateTime = startDate ? new Date(startDate).getTime() : 0;
+        const endDateTime = endDate ? new Date(endDate).getTime() : Infinity;
+
+        return featureFirstSupport >= startDateTime && featureFirstSupport <= endDateTime;
+      }
+
+      async function exportToCSV() {
+        try {
+          const response = await fetch("https://api.github.com/repos/mdn/browser-compat-data/contents/api");
+          const data = await response.json();
+
+          let csvContent = "Feature,Browser,Release Date,Version,Rank,Delay Days\n";
+
+          // Fetch data for each feature
+          for (const item of data) {
+            const featureName = item.name.replace(".json", "");
+            const url = `https://bcd.developer.mozilla.org/bcd/api/v0/current/api.${featureName}.json`;
+
+            try {
+              const response = await fetch(url);
+              const featureData = await response.json();
+              const supportData = extractSupportData(featureData);
+
+              // Only include features in the selected date range
+              if (isFeatureInDateRange(supportData)) {
+                supportData.forEach((record) => {
+                  // Format delay days with sign (+ for first browser, which will be 0)
+                  const delayDisplay = record.delayDays === 0
+                    ? "+0"
+                    : record.delayDays > 0
+                      ? `+${record.delayDays}`
+                      : record.delayDays.toString();
+                      
+                  csvContent += `${featureName},${record.browser},${record.date.toISOString().split("T")[0]},${record.version},${record.rank},${delayDisplay}\n`;
+                });
+              }
+            } catch (error) {
+              console.error(`Error fetching ${featureName}:`, error);
+            }
+          }
+
+          // Create and trigger download
+          const blob = new Blob([csvContent], { type: "text/csv" });
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.setAttribute("href", url);
+          a.setAttribute("download", "browser_features.csv");
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+        } catch (error) {
+          console.error("Error generating CSV:", error);
+        }
+      }
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@gramex/ui@0.3/dist/dark-theme.js" type="module"></script>
+  </body>
+</html>

@@ -1,0 +1,22 @@
+Count of Day,Browser,,,,,,,,,,,,,,,,
+Day,chrome,chrome_android,deno,edge,firefox,firefox_android,ie,nodejs,oculus,opera,opera_android,safari,safari_ios,samsunginternet_android,webview_android,webview_ios,Grand Total
+Sun,,,3,,,,,,,1,,,,2,,,6
+Mon,26,14,5,37,6,7,129,,25,22,100,287,272,7,305,259,1501
+Tue,564,313,18,49,664,611,17,47,25,593,449,105,69,9,300,68,3901
+Wed,68,561,39,642,12,14,4,3,,180,156,112,119,245,208,118,2481
+Thu,269,24,35,105,11,6,95,,,134,153,68,38,87,12,26,1063
+Fri,21,11,,106,,2,84,1,,,27,131,198,162,9,198,950
+Sat,,,,,,,,,,,17,,9,402,,9,437
+,,,,,,,,,,,,,,,,,10339
+,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,
+,Chrome ,Tue ,Chrome_andoid,Wed,,,,,,,,,,,,,
+,deno,wed,,,,,,,,,,,,,,,
+,edge,Wed,,,,,,,,,,,,,,,
+,firefox,Tue ,firefox_android,Tue,,,,,,,,,,,,,
+,ie,Mon,,,,,,,,,,,,,,,
+,nodejs,Tue ,,,,,,,,,,,,,,,
+,opera,Tue ,opera_android,Tue,,,,,,,,,,,,,
+,Safari,Mon,Safari_ios,Mon,,,,,,,,,,,,,
+,Samsung_internet,Saturday,,,,,,,,,,,,,,,
+,webview_Android,Mon,webview_ios,Mon,,,,,,,,,,,,,
